@@ -455,6 +455,17 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 				}
 			}
 
+	#if defined(CONFIG_PROJECT_c330ae_tinno)
+			for (i = 0; i < pdata->panel_info.rst_seq_len; ++i) {
+				gpio_set_value((ctrl_pdata->tp_rst_gpio),
+					pdata->panel_info.rst_seq[i]);
+				
+				if (pdata->panel_info.rst_seq[++i])
+					usleep_range(10000,
+					10000 + 10);
+			}
+	#endif
+
 			for (i = 0; i < pdata->panel_info.rst_seq_len; ++i) {
 				gpio_set_value((ctrl_pdata->rst_gpio),
 					pdata->panel_info.rst_seq[i]);
@@ -516,7 +527,11 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 			usleep_range(100, 110);
 			gpio_free(ctrl_pdata->disp_en_gpio);
 		}
+#if defined(CONFIG_PROJECT_c330ae_tinno)
+		gpio_set_value((ctrl_pdata->rst_gpio), 1);
+#else
 		gpio_set_value((ctrl_pdata->rst_gpio), 0);
+#endif
 		gpio_free(ctrl_pdata->rst_gpio);
 		if (gpio_is_valid(ctrl_pdata->mode_gpio))
 			gpio_free(ctrl_pdata->mode_gpio);
