@@ -27,6 +27,10 @@
 #include "bus.h"
 #include "mmc_ops.h"
 #include "sd_ops.h"
+//TINNO BEGIN
+//added start for adding flash information in *#0661#
+#include <linux/string.h>
+//TINNO END
 
 #define DEFAULT_CMD6_TIMEOUT_MS	500
 
@@ -73,6 +77,10 @@ static const struct mmc_fixup mmc_ext_csd_fixups[] = {
 			__res |= resp[__off-1] << ((32 - __shft) % 32);	\
 		__res & __mask;						\
 	})
+
+#ifdef CONFIG_DEV_INFO
+extern int store_flash_info(struct mmc_card *arg0);
+#endif
 
 static int mmc_switch_status(struct mmc_card *card, bool ignore_crc);
 /*
@@ -892,6 +900,79 @@ static ssize_t mmc_dsr_show(struct device *dev,
 
 static DEVICE_ATTR(dsr, S_IRUGO, mmc_dsr_show, NULL);
 
+//TINNO BEGIN
+//addedfor adding flash information in *#0661#
+static ssize_t mmc_chipinfo_show (struct device *dev, struct device_attribute *attr, char *buf)
+{										
+    struct mmc_card *card = mmc_dev_to_card(dev);
+    char tempID[40] = "";
+    char vendorName[16] = "";
+    char romsize[8] = "";
+    char ramsize[8] = "";
+    struct sysinfo si;
+
+    si_meminfo(&si);
+
+    if(si.totalram > 1572864 )				   // 6G = 1572864 	(256 *1024)*6
+   		strcpy(ramsize , "8G");
+    else if(si.totalram > 1048576)			  // 4G = 786432 	(256 *1024)*4
+    		strcpy(ramsize , "6G");
+    else if(si.totalram > 786432)			 // 3G = 786432 	(256 *1024)*3
+    		strcpy(ramsize , "4G");
+    else if(si.totalram > 524288)			// 2G = 524288 	(256 *1024)*2
+    		strcpy(ramsize , "3G");
+    else if(si.totalram > 262144)               // 1G = 262144		(256 *1024)     4K page size
+    		strcpy(ramsize , "2G");
+    else
+    		strcpy(ramsize , "1G");
+
+
+    if(card->ext_csd.sectors > 268435456)  		
+		strcpy(romsize , "256G");
+    else if(card->ext_csd.sectors > 134217728)  		
+		strcpy(romsize , "128G");
+    else if(card->ext_csd.sectors > 67108864)  	// 67108864 = 32G *1024*1024*1024 /512            512 page	
+		strcpy(romsize , "64G");
+    else if(card->ext_csd.sectors > 33554432)  // 33554432 = 16G *1024*1024*1024 /512            512 page
+		strcpy(romsize , "32G");
+    else if(card->ext_csd.sectors > 16777216)  // 16777216 = 8G *1024*1024*1024 /512            512 page
+		strcpy(romsize , "16G");
+    else if(card->ext_csd.sectors > 8388608)  // 8388608 = 4G *1024*1024*1024 /512            512 page
+		strcpy(romsize , "8G");
+    else
+		strcpy(romsize , "4G");	
+	
+    memset(tempID, 0, sizeof(tempID));
+
+    sprintf(tempID, "%08x ", card->raw_cid[0]);
+    printk("FlashID is %s, totalram= %ld, emmc_capacity =%d\n",tempID, si.totalram, card->ext_csd.sectors);
+
+    if(strncasecmp((const char *)tempID, "90", 2) == 0)           // 90 is OEMid for Hynix 
+   		strcpy(vendorName , "Hynix");
+    else if(strncasecmp((const char *)tempID, "15", 2) == 0)		// 15 is OEMid for Samsung 
+   		strcpy(vendorName , "Samsung");
+    else if(strncasecmp((const char *)tempID, "45", 2) == 0)		// 45 is OEMid for Sandisk 
+   		strcpy(vendorName , "Sandisk");
+    else if(strncasecmp((const char *)tempID, "70", 2) == 0)		// 70 is OEMid for Kingston 
+   		strcpy(vendorName , "Kingston");
+    else if(strncasecmp((const char *)tempID, "88", 2) == 0)		// 88 is OEMid for Foresee 
+   		strcpy(vendorName , "Foresee");
+    else if(strncasecmp((const char *)tempID, "f4", 2) == 0)		// f4 is OEMid for Biwin 
+   		strcpy(vendorName , "Biwin");
+    else if(strncasecmp((const char *)tempID, "8F", 2) == 0)		// 8F is OEMid for UNIC 
+   		strcpy(vendorName , "UNIC");
+    else
+		strcpy(vendorName , "Unknown");
+
+    memset(tempID, 0, sizeof(tempID));
+    sprintf(tempID,"%s_%s+%s", 	vendorName,	romsize,	ramsize);
+   
+    printk("Exit in show_chipinfo_value\n");
+    return sprintf(buf,"%s", tempID);					
+}										
+static DEVICE_ATTR(chipinfo, S_IRUGO, mmc_chipinfo_show, NULL);
+//TINNO END
+
 static struct attribute *mmc_std_attrs[] = {
 	&dev_attr_cid.attr,
 	&dev_attr_csd.attr,
@@ -916,6 +997,10 @@ static struct attribute *mmc_std_attrs[] = {
 	&dev_attr_rel_sectors.attr,
 	&dev_attr_ocr.attr,
 	&dev_attr_dsr.attr,
+//TINNO BEGIN
+//added for adding flash information in *#0661#
+    	&dev_attr_chipinfo.attr,
+//TINNO END
 	NULL,
 };
 ATTRIBUTE_GROUPS(mmc_std);
@@ -2351,6 +2436,10 @@ reinit:
 			goto reinit;
 		}
 	}
+
+#ifdef CONFIG_DEV_INFO
+    store_flash_info(card);
+#endif
 
 	return 0;
 
