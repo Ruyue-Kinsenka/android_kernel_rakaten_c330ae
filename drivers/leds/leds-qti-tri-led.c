@@ -42,6 +42,8 @@
 
 #define PWM_PERIOD_DEFAULT_NS		1000000
 
+u32 brightscale = 10;   // set brightness / 10 * brightscale //LIUJ20190626161600ADDO
+
 struct pwm_setting {
 	u64	pre_period_ns;
 	u64	period_ns;
@@ -231,14 +233,14 @@ static int qpnp_tri_led_set_brightness(struct led_classdev *led_cdev,
 	if (brightness > LED_FULL)
 		brightness = LED_FULL;
 
-	if (brightness == led->led_setting.brightness &&
+	if (brightness/10*brightscale == led->led_setting.brightness &&
 			!led->blinking && !led->breathing) {
 		mutex_unlock(&led->lock);
 		return 0;
 	}
 
-	led->led_setting.brightness = brightness;
-	if (!!brightness)
+	led->led_setting.brightness = brightness/10*brightscale;
+	if (!!led->led_setting.brightness)
 		led->led_setting.off_ms = 0;
 	else
 		led->led_setting.on_ms = 0;
@@ -447,6 +449,11 @@ static int qpnp_tri_led_parse_dt(struct qpnp_tri_led_chip *chip)
 		dev_err(chip->dev, "can't support %d leds(max %d)\n",
 				chip->num_leds, TRILED_NUM_MAX);
 		return -EINVAL;
+	}
+
+	rc = of_property_read_u32(chip->dev->of_node, "bright-scale", &brightscale);
+	if (rc) {
+		brightscale = 10;
 	}
 
 	chip->leds = devm_kcalloc(chip->dev, chip->num_leds,
