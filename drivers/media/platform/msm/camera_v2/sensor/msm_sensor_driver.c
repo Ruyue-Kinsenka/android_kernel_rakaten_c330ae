@@ -31,6 +31,9 @@ static int32_t msm_sensor_driver_platform_probe(struct platform_device *pdev);
 /* Static declaration */
 static struct msm_sensor_ctrl_t *g_sctrl[MAX_CAMERAS];
 
+#ifdef CONFIG_DEV_INFO
+extern void store_camera_info(const char *const sensor_name, const char *const eeprom_name);
+#endif
 static int msm_sensor_platform_remove(struct platform_device *pdev)
 {
 	struct msm_sensor_ctrl_t  *s_ctrl;
@@ -1137,7 +1140,7 @@ CSID_TG:
 	}
 
 	pr_err("%s probe succeeded", slave_info->sensor_name);
-
+       store_camera_info(slave_info->sensor_name, s_ctrl->sensordata->eeprom_name);
 	s_ctrl->bypass_video_node_creation =
 		slave_info->bypass_video_node_creation;
 
