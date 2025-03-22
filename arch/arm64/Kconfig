@@ -717,6 +717,11 @@ config ARCH_HAS_CACHE_LINE_SIZE
 
 source "mm/Kconfig"
 
+config PROJECT_c330ae_tinno
+	tristate "project support"
+	help
+	  This option enables support project name 
+
 config ARM64_DMA_USE_IOMMU
 	bool "ARM64 DMA iommu integration"
 	select ARM_HAS_SG_CHAIN
