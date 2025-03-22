@@ -336,6 +336,14 @@
 
 #define KEY_MICMUTE		248	/* Mute / unmute the microphone */
 
+// TINNO BEGIN
+#define KEY_HALLOPEN	249
+#define KEY_HALLCLOSE	250
+#define KEY_KEYTP	    251
+// TINNO END
+
+
+
 /* Code 255 is reserved for special needs of AT keyboard driver */
 
 #define BTN_MISC		0x100
