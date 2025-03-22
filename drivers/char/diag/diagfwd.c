@@ -26,6 +26,13 @@
 #ifdef CONFIG_DIAG_OVER_USB
 #include <linux/usb/usbdiag.h>
 #endif
+//Vic.LUO@TN added for CDDAL-741  factory reset by diag command("75 84 73 78 78 79 00") during power on.
+#include <linux/sysfs.h>
+#include <linux/string.h>
+#include <linux/fs.h>
+#include <linux/sysctl.h>
+#include <linux/uaccess.h>
+//Vic.LUO@TN added end
 #include <soc/qcom/socinfo.h>
 #include <soc/qcom/restart.h>
 #include "diagmem.h"
@@ -68,6 +75,19 @@ static uint8_t common_cmds[DIAG_NUM_COMMON_CMD] = {
 };
 
 static uint8_t hdlc_timer_in_progress;
+
+// TINNO BEGIN
+enum {
+    TEST_SPEAKER = 0,
+    TEST_RECEIVER,
+    TEST_MAINMIC,
+    TEST_SUBMIC,
+    TEST_HEADSETMIC,
+    TEST_STOPTEST,
+    TEST_RESETWIFI = 8,
+    TEST_MAX,
+};
+// TINNO END
 
 /* Determine if this device uses a device tree */
 #ifdef CONFIG_OF
@@ -1029,6 +1049,18 @@ int diag_process_apps_pkt(unsigned char *buf, int len, int pid)
 	uint32_t pd_mask = 0;
 	struct diag_md_session_t *info = NULL;
 
+	// TINNO BEGIN
+	char *speaker[3] = { "AUDIO_ID=SPEAKER", NULL ,NULL};
+	char *receiver[3]    = { "AUDIO_ID=RECEIVER", NULL,NULL };
+	char *main_mic[3]   = { "AUDIO_ID=MAINMIC", NULL,NULL };
+	char *sub_mic[3]   = { "AUDIO_ID=SUBMIC", NULL,NULL };
+	char *headset_mic[3]   = { "AUDIO_ID=HEADSETMIC", NULL,NULL };
+	char *stoptest[2]   = { "AUDIO_ID=STOPTEST", NULL };	
+	char *resetwifi[2]   = { "AUDIO_ID=RESETWIFI", NULL };
+	// TINNO END
+
+	char *wipereboot[2]   = { "DIAG_CMD=WIPEREBOOT", NULL };
+
 	if (!buf)
 		return -EIO;
 
@@ -1050,6 +1082,72 @@ int diag_process_apps_pkt(unsigned char *buf, int len, int pid)
 
 	pr_debug("diag: In %s, received cmd %02x %02x %02x\n",
 		 __func__, entry.cmd_code, entry.subsys_id, entry.cmd_code_hi);
+	//Vic.LUO@TN added for CDDAL-741  factory reset by diag command("75 84 73 78 78 79 00") during power on.
+	/* Check for the diag command TINNO "75 84 73 78 78 79 00"*/
+	if(entry.subsys_id == 84 && entry.cmd_code_hi == 20041)
+	{
+	    driver->apps_rsp_buf[0] = 0x4b;
+	    driver->apps_rsp_buf[1] = 0x54;
+	    driver->apps_rsp_buf[2] = 0x49;
+	    driver->apps_rsp_buf[3] = 0x4e;
+	    driver->apps_rsp_buf[4] = 0x4e;
+	    driver->apps_rsp_buf[5] = 0x4f;
+	    // encode_rsp_and_send(5);
+	    diag_send_rsp(driver->apps_rsp_buf, 5, pid);
+
+	    kobject_uevent_env(&driver->diag_dev->kobj, KOBJ_CHANGE,wipereboot);
+	    return 0;
+	}
+	//Vic.LUO@TN added end
+       // TINNO BEGIN
+       if(entry.subsys_id == 65 && entry.cmd_code_hi == 17493){
+           int test_id = (int)(*(char *)temp++);
+           int during = (int)(*(char *)temp);
+           int ret = -1;
+           char state_buf[10];
+           snprintf(state_buf, sizeof(state_buf),"DURING=%d", during);
+           printk("====wj audio test id : %d==during=%d=\n", test_id,during);
+           switch(test_id){
+               case TEST_SPEAKER:
+                   speaker[1] = state_buf;
+                   ret=kobject_uevent_env(&driver->diag_dev->kobj, KOBJ_CHANGE,speaker);
+                   break;
+               case TEST_RECEIVER:
+                   receiver[1] = state_buf;
+                   ret=kobject_uevent_env(&driver->diag_dev->kobj, KOBJ_CHANGE,receiver);
+                   break;
+               case TEST_MAINMIC:
+                   main_mic[1] = state_buf;
+                   ret=kobject_uevent_env(&driver->diag_dev->kobj, KOBJ_CHANGE,main_mic);
+                   break;
+               case TEST_SUBMIC:
+                   sub_mic[1] = state_buf;
+                   ret=kobject_uevent_env(&driver->diag_dev->kobj, KOBJ_CHANGE,sub_mic);
+                   break;
+               case TEST_HEADSETMIC:
+                   headset_mic[1] = state_buf;
+                   ret=kobject_uevent_env(&driver->diag_dev->kobj, KOBJ_CHANGE,headset_mic);
+                   break;
+               case TEST_STOPTEST:
+                   ret=kobject_uevent_env(&driver->diag_dev->kobj, KOBJ_CHANGE,stoptest);
+                   break;
+               case TEST_RESETWIFI:
+                   ret=kobject_uevent_env(&driver->diag_dev->kobj, KOBJ_CHANGE,resetwifi);
+                   break;
+               default:
+                   pr_debug("wj audio error cammod");
+                   break;
+           }
+           driver->apps_rsp_buf[0] = 75;
+           driver->apps_rsp_buf[1] = 65;
+           driver->apps_rsp_buf[2] = 85;
+           driver->apps_rsp_buf[3] = 68;
+           driver->apps_rsp_buf[4] = test_id;
+           driver->apps_rsp_buf[5] = during;
+           diag_send_rsp(driver->apps_rsp_buf, 5, pid);
+           return 0;
+       }
+	   // TINNO END
 
 	if (*buf == DIAG_CMD_LOG_ON_DMND && driver->log_on_demand_support &&
 	    driver->feature[PERIPHERAL_MODEM].rcvd_feature_mask) {
