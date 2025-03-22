@@ -46,6 +46,12 @@
 	((typec_mode == POWER_SUPPLY_TYPEC_SOURCE_MEDIUM	\
 	|| typec_mode == POWER_SUPPLY_TYPEC_SOURCE_HIGH)	\
 	&& !chg->typec_legacy)
+#ifdef CONFIG_USB_SWITCH_AS6313//add by lijian for usb-audio
+extern void as6313_USB(void);
+extern void as6313_CTIA(void);
+extern void as6313_OMTP(void);
+#endif
+
 
 int smblib_read(struct smb_charger *chg, u16 addr, u8 *val)
 {
@@ -606,9 +612,21 @@ int smblib_configure_hvdcp_apsd(struct smb_charger *chg, bool enable)
 {
 	int rc;
 	u8 mask = HVDCP_EN_BIT | BC1P2_SRC_DETECT_BIT;
+	
+	u8 mask_hd = HVDCP_EN_BIT;
+	u8 stat=0;
 
+	rc = smblib_masked_write(chg, USBIN_OPTIONS_1_CFG_REG, mask_hd,
+						0);
+	
+	smblib_read(chg, USBIN_OPTIONS_1_CFG_REG, &stat);
+	smblib_err(chg, "####afterUSBIN_OPTIONS_1_CFG_REGc=0x%x\n", stat);
 	if (chg->pd_not_supported)
+	{
+		//pr_err( "####pd_not_supported\n");
 		return 0;
+	}
+		
 
 	rc = smblib_masked_write(chg, USBIN_OPTIONS_1_CFG_REG, mask,
 						enable ? mask : 0);
@@ -3341,6 +3359,7 @@ static void update_sw_icl_max(struct smb_charger *chg, int pst)
 		 * limit ICL to 100mA, the USB driver will enumerate to check
 		 * if this is a SDP and appropriately set the current
 		 */
+		 
 		vote(chg->usb_icl_votable, SW_ICL_MAX_VOTER, true,
 					SDP_100_MA);
 		break;
@@ -3664,7 +3683,16 @@ irqreturn_t typec_state_change_irq_handler(int irq, void *data)
 
 	smblib_dbg(chg, PR_INTERRUPT, "IRQ: cc-state-change; Type-C %s detected\n",
 				smblib_typec_mode_name[chg->typec_mode]);
-
+#ifdef CONFIG_USB_SWITCH_AS6313//add by lijian for usb-audio
+	if(chg->typec_mode == POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER){
+		printk("%s:ssss---typec_mode:POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER\n",__func__);
+		as6313_CTIA();
+		//as6313_OMTP();
+	}else{
+		printk("%s:ssss---typec_mode=%d not usb audio mode!!\n",__func__,chg->typec_mode);
+		as6313_USB();
+	}
+#endif
 	power_supply_changed(chg->usb_psy);
 
 	return IRQ_HANDLED;

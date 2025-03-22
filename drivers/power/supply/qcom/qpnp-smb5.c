@@ -222,6 +222,7 @@ struct smb5 {
 };
 
 static int __debug_mask;
+//static int __debug_mask = 0xff; 
 module_param_named(
 	debug_mask, __debug_mask, int, 0600
 );
@@ -1343,12 +1344,17 @@ static int smb5_batt_get_prop(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT:
 		rc = smblib_get_prop_system_temp_level(chg, val);
+		//pr_err("####smblib_get_prop_system_temp_level\n");
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT_MAX:
 		rc = smblib_get_prop_system_temp_level_max(chg, val);
+		//pr_err("####smblib_get_prop_system_temp_level_max\n");
 		break;
 	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMITED:
-		rc = smblib_get_prop_input_current_limited(chg, val);
+		//rc = smblib_get_prop_input_current_limited(chg, val);
+		val->intval = get_client_vote(chg->fcc_votable,
+					      BATT_PROFILE_VOTER);
+		//pr_err("####smblib_get_prop_input_current_limited\n");
 		break;
 	case POWER_SUPPLY_PROP_STEP_CHARGING_ENABLED:
 		val->intval = chg->step_chg_enabled;
@@ -1485,6 +1491,7 @@ static int smb5_batt_set_prop(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX:
 		chg->batt_profile_fcc_ua = val->intval;
+		//pr_err("####POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX\n");
 		vote(chg->fcc_votable, BATT_PROFILE_VOTER, true, val->intval);
 		break;
 	case POWER_SUPPLY_PROP_SET_SHIP_MODE:
@@ -1505,6 +1512,9 @@ static int smb5_batt_set_prop(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_INPUT_CURRENT_LIMITED:
 		rc = smblib_set_prop_input_current_limited(chg, val);
+                chg->batt_profile_fcc_ua = val->intval;
+		vote(chg->fcc_votable, BATT_PROFILE_VOTER, true, val->intval);
+		pr_err("####smblib_set_prop_input_current_limited true current\n");
 		break;
 	case POWER_SUPPLY_PROP_DIE_HEALTH:
 		chg->die_health = val->intval;
