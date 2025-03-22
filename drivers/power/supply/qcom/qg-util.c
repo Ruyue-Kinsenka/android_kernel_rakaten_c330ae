@@ -313,9 +313,10 @@ int qg_get_battery_temp(struct qpnp_qg *chip, int *temp)
 {
 	int rc = 0;
 	struct qpnp_vadc_result result;
-
+	
 	if (chip->battery_missing) {
 		*temp = 250;
+		pr_err("qg_get_battery_temp entry\n"); 
 		return 0;
 	}
 
@@ -325,10 +326,11 @@ int qg_get_battery_temp(struct qpnp_qg *chip, int *temp)
 					VADC_BAT_THERM_PU2, rc);
 		return rc;
 	}
-	pr_debug("batt_temp = %lld meas = 0x%llx\n",
+	pr_err("batt_temp = %lld meas = 0x%llx\n",
 			result.physical, result.measurement);
 
 	*temp = (int)result.physical;
+//	*temp = 280;
 
 	return rc;
 }
