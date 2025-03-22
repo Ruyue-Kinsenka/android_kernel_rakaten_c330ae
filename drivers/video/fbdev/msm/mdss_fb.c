@@ -297,6 +297,10 @@ static void mdss_fb_set_bl_brightness(struct led_classdev *led_cdev,
 	MDSS_BRIGHT_TO_BL(bl_lvl, value, mfd->panel_info->bl_max,
 				mfd->panel_info->brightness_max);
 
+#if 0//defined(CONFIG_PROJECT_c330ae_tinno)
+	if(value == 10)
+		bl_lvl = 2;
+#endif
 	if (!bl_lvl && value)
 		bl_lvl = 1;
 
