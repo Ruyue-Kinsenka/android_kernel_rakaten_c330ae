@@ -1,5 +1,5 @@
 /************************************************************************
-* Copyright (C) 2012-2019, Focaltech Systems (R)£¬All Rights Reserved.
+* Copyright (C) 2012-2019, Focaltech Systems (R)ï¿½ï¿½All Rights Reserved.
 *
 * File Name: focaltech_flash.h
 *
@@ -98,6 +98,7 @@
 
 #define FTS_APP_INFO_OFFSET                         0x100
 
+
 enum FW_STATUS {
     FTS_RUN_IN_ERROR,
     FTS_RUN_IN_APP,
@@ -173,6 +174,7 @@ struct fts_upgrade {
 *****************************************************************************/
 extern struct upgrade_func upgrade_func_ft8006p;
 extern struct upgrade_func upgrade_func_ft8006u;
+extern struct fts_update_fun fts_updatefun_curr;
 
 /*****************************************************************************
 * Static function prototypes
