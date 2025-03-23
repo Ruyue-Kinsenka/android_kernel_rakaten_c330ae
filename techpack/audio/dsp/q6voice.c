@@ -16,6 +16,7 @@
 #include <linux/uaccess.h>
 #include <linux/wait.h>
 #include <linux/mutex.h>
+#include <linux/overflow.h> 
 
 #include <soc/qcom/socinfo.h>
 
@@ -7849,7 +7850,7 @@ static int32_t qdsp_cvs_callback(struct apr_client_data *data, void *priv)
 
 		cvs_voc_pkt = v->shmem_info.sh_buf.buf[1].data;
 
-		if (__builtin_add_overflow(cvs_voc_pkt[2], 3 * sizeof(uint32_t), &tot_buf_sz)) {
+		if (check_add_overflow(cvs_voc_pkt[2], 3 * sizeof(uint32_t), &tot_buf_sz)) {
 			 pr_err("%s: integer overflow detected\n", __func__);
 			 return -EINVAL;
 		}
