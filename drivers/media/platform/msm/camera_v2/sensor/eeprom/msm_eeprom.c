@@ -54,10 +54,8 @@ static int msm_get_read_mem_size
 			return -EINVAL;
 		}
 		for (i = 0; i < eeprom_map->memory_map_size; i++) {
-			if (((eeprom_map->mem_settings[i].i2c_operation ==
+			if ((eeprom_map->mem_settings[i].i2c_operation ==
 				MSM_CAM_READ) ||
-				(eeprom_map->mem_settings[i].i2c_operation ==
-				MSM_CAM_READ_LOOP)) ||
 				(eeprom_map->mem_settings[i].i2c_operation ==  /*add for gc5025 & gc5025a*/
 				MSM_CAM_READ_GC5025A)) {
 				size += eeprom_map->mem_settings[i].reg_data;
@@ -464,35 +462,6 @@ static int eeprom_parse_memory_map(struct msm_eeprom_ctrl_t *e_ctrl,
 						*memptr = (uint8_t)gc_read;
 						memptr++;
 					}
-				}
-			}
-			break;
-
-			case MSM_CAM_READ_LOOP: {
-				e_ctrl->i2c_client.addr_type =
-				 eeprom_map->mem_settings[i].addr_type;
-
-				for (gc = 0;
-					gc < eeprom_map->mem_settings[i].
-						reg_data;
-					gc++) {
-					msleep(eeprom_map->mem_settings[i].
-						delay);
-					rc = e_ctrl->i2c_client.i2c_func_tbl->
-						i2c_read(
-						&(e_ctrl->i2c_client),
-						eeprom_map->mem_settings[i].
-						reg_addr,
-						&gc_read,
-						eeprom_map->mem_settings[i].
-						data_type);
-					if (rc < 0) {
-						pr_err("%s: read failed\n",
-							__func__);
-						goto clean_up;
-					}
-					*memptr = (uint8_t)gc_read;
-					memptr++;
 				}
 			}
 			break;

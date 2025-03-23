@@ -930,15 +930,6 @@ int fts_flash_write_buf(
     return ecc_in_host;
 }
 
-int fts_ctpm_lcd_cfg_upgrade(struct i2c_client *client)
-{
-	int i_ret = 0;
-
-	if (fts_updatefun_curr.upgrade_with_lcd_cfg_i_file)
-		i_ret = fts_updatefun_curr.upgrade_with_lcd_cfg_i_file(client);
-
-	return i_ret;
-}
 /************************************************************************
  * Name: fts_flash_read_buf
  * Brief: read data from flash
