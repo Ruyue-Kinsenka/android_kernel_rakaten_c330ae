@@ -257,7 +257,6 @@ enum msm_camera_i2c_operation {
 	MSM_CAM_READ,
     MSM_CAM_READ_GC5025A,
 #define MSM_CAM_READ_LOOP \
-	MSM_CAM_READ_LOOP
 	MSM_CAM_READ_LOOP = 3,
 };
 
