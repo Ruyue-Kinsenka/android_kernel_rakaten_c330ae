@@ -16,7 +16,7 @@
 #include <linux/uaccess.h>
 #include <linux/wait.h>
 #include <linux/mutex.h>
-#include <linux/overflow.h> 
+
 
 #include <soc/qcom/socinfo.h>
 
@@ -31,6 +31,7 @@
 #include "adsp_err.h"
 
 #define TIMEOUT_MS 300
+#define UINT32_MAX 0xFFFFFFFFUL
 
 
 #define CMD_STATUS_SUCCESS 0
@@ -7850,10 +7851,15 @@ static int32_t qdsp_cvs_callback(struct apr_client_data *data, void *priv)
 
 		cvs_voc_pkt = v->shmem_info.sh_buf.buf[1].data;
 
-		if (check_add_overflow(cvs_voc_pkt[2], 3 * sizeof(uint32_t), &tot_buf_sz)) {
-			 pr_err("%s: integer overflow detected\n", __func__);
-			 return -EINVAL;
-		}
+{		
+    	uint32_t a = cvs_voc_pkt[2];
+    	uint32_t b = 3 * sizeof(uint32_t);
+    	if (a > UINT32_MAX - b) {
+        	pr_err("%s: integer overflow detected\n", __func__);
+        	return -EINVAL;
+    	}
+    	tot_buf_sz = a + b;
+}
 
 		if (cvs_voc_pkt != NULL &&  common.mvs_info.ul_cb != NULL) {
 			if (v->shmem_info.sh_buf.buf[1].size < tot_buf_sz) {
