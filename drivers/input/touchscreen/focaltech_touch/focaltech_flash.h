@@ -174,7 +174,6 @@ struct fts_upgrade {
 *****************************************************************************/
 extern struct upgrade_func upgrade_func_ft8006p;
 extern struct upgrade_func upgrade_func_ft8006u;
-extern struct fts_update_fun fts_updatefun_curr;
 
 /*****************************************************************************
 * Static function prototypes
