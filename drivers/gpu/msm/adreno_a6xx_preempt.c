@@ -16,6 +16,11 @@
 #include "adreno_trace.h"
 #include "adreno_pm4types.h"
 
+#define KMD_POSTAMBLE_IDX 100
+
+#define SCRATCH_POSTAMBLE_ADDR(dev) \
+	((dev)->scratch->gpuaddr + SCRATCH_POSTAMBLE_OFFSET)
+
 #define PREEMPT_RECORD(_field) \
 		offsetof(struct a6xx_cp_preemption_record, _field)
 
